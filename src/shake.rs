@@ -1,3 +1,4 @@
+// Keccakf permutation based on tinySHA3 c implementation
 const KECCAKF_RNDC: [u64;24] = [0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
 0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
 0x8000000080008081, 0x8000000000008009, 0x000000000000008a,
@@ -14,7 +15,7 @@ const KECCAKF_PILN: [usize;24] =[10, 7,  11, 17, 18, 3, 5,  16, 8,  21, 24, 4,
 
 const KECCAKF_ROUNDS:usize =24;
 
-fn sha3_keccakf(input: &mut [u8]) {
+fn sha3_keccakf(input: &mut[u8]) {
     let mut j: usize;
     let mut t: u64;
     let mut bc: [u64; 5] = [0; 5]; 
@@ -65,6 +66,52 @@ fn sha3_keccakf(input: &mut [u8]) {
         let bytes = lane.to_le_bytes();
         input[k*8..(k+1)*8].copy_from_slice(&bytes);
     }
-    
-    
+
+    // Sponge Construction
+    const RATE:usize = 136;
+    pub struct Shake{
+        b: [u8;200],
+        pos: usize
+    }
+    impl Shake {
+        
+        pub fn new(input:&[u8]) -> Self {
+            let mut shake = Shake {
+                b: [0u8; 200],
+                pos: 0,        
+            };
+            for i in 0..200.min(input.len()) {
+                shake.b[i] = input[i];
+            }
+            shake
+        }
+        pub fn absorb(&mut self, input:&[u8]) {
+            let mut x = input;
+            let padded:Vec<u8>;
+            if x.len()  % RATE !=0 {
+                fn pad_ten_one(val:&[u8]) -> Vec<u8> {
+                    let q:usize  =RATE - (val.len() % RATE);
+                    let new_len =val.len() + q;
+                    let mut padded = Vec::with_capacity(new_len);
+                    padded.extend_from_slice(val);
+                    padded.resize(new_len, 0);
+                    padded[new_len - 1] = 0x80;
+                    padded
+                }
+                padded = pad_ten_one(x);
+                x = padded.as_slice();
+            }
+            
+            let mut i = self.pos;
+                for &value in x {
+                    self.b[i] ^= value;
+                    i = i + 1;
+                    if i>=RATE {
+                        sha3_keccakf(&mut self.b);
+                        i=0;
+                    }
+            }
+            self.pos = i;
+        }
+    }
 }
