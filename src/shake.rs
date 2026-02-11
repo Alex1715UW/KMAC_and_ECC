@@ -102,16 +102,32 @@ fn sha3_keccakf(input: &mut[u8]) {
                 x = padded.as_slice();
             }
             
-            let mut i = self.pos;
+            let mut j = self.pos;
                 for &value in x {
-                    self.b[i] ^= value;
-                    i = i + 1;
-                    if i>=RATE {
+                    self.b[j] ^= value;
+                    j = j + 1;
+                    if j >=RATE {
                         sha3_keccakf(&mut self.b);
-                        i=0;
+                        j =0;
                     }
             }
-            self.pos = i;
+            self.pos = j;
         }
+        
+        pub fn squeeze(&mut self, output:&mut[u8]) {
+            let mut j = self.pos;
+            for i in 0..output.len() {
+                if j>= RATE {
+                    sha3_keccakf(&mut self.b);
+                    j = 0;
+                }
+
+                output[i] = self.b[j];
+                j += 1;
+            }
+            self.pos = j;
+        }
+        
+        
     }
 }
