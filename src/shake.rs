@@ -18,7 +18,7 @@ const KECCAKF_ROUNDS:usize =24;
 fn sha3_keccakf(input: &mut[u8]) {
     let mut j: usize;
     let mut t: u64;
-    let mut bc: [u64; 5] = [0; 5]; 
+    let mut bc: [u64; 5] = [0; 5];
     let mut st: [u64; 25] = [0; 25]; // Keccak State
 
     // Load bytes into 64-bit lanes (little-endian)
@@ -37,38 +37,37 @@ fn sha3_keccakf(input: &mut[u8]) {
                 st[j + i] ^= t;
             }
         }
-        
+
         // Rho Pi
-        t=st[1];
-        for i in  0..24 {
+        t = st[1];
+        for i in 0..24 {
             j = KECCAKF_PILN[i];
-            bc[0] =st[j];
+            bc[0] = st[j];
             st[j] = t.rotate_left(KECCAKF_ROTC[i]);
-            t=bc[0];
+            t = bc[0];
         }
-        
+
         //Chi
         for j in (0..25).step_by(5) {
             for i in 0..5 {
-                bc[i]= st[j + i];
+                bc[i] = st[j + i];
             }
             for i in 0..5 {
                 st[j + i] ^= (!bc[(i + 1) % 5]) & bc[(i + 2) % 5];
             }
         }
-        
+
         //Iota
         st[0] ^= KECCAKF_RNDC[round as usize];
-        
     }
 
     for (k, &lane) in st.iter().enumerate() {
         let bytes = lane.to_le_bytes();
-        input[k*8..(k+1)*8].copy_from_slice(&bytes);
+        input[k * 8..(k + 1) * 8].copy_from_slice(&bytes);
     }
-
-    // Sponge Construction
-    const RATE:usize = 136;
+}
+// Sponge Construction
+const RATE:usize = 136;
     pub struct Shake{
         b: [u8;200],
         pos: usize
@@ -130,4 +129,4 @@ fn sha3_keccakf(input: &mut[u8]) {
         
         
     }
-}
+
