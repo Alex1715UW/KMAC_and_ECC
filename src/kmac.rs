@@ -4,7 +4,23 @@ const RIGHT_ENCODE_0:[u8;2] = [0x0,0x1];
 pub fn kmacxof256(k:&[u8], x:&[u8], l:usize, s:&[u8]) ->Vec<u8>{
     assert_eq!(l % 8, 0, "Implementation restriction: output length (in bits) must be a multiple of 8");
     let mut shake = Shake::new(&[]);
-    
+    let encode_n = encode_string(b"KMAC");
+    let encode_s = encode_string(s);
+    let mut sn = Vec::with_capacity(encode_n.len() + encode_s.len());
+    sn.extend_from_slice(&encode_n);
+    sn.extend_from_slice(&encode_s);
+    sn = bytepad(sn.as_slice(), 136);
+    shake.absorb(&sn);
+    let key = bytepad(encode_string(k).as_slice(),136);
+    shake.absorb(&key);
+    let mut x_append0:Vec<u8> = Vec::with_capacity(x.len()+RIGHT_ENCODE_0.len() +1);
+    x_append0.extend_from_slice(&x);
+    x_append0.extend_from_slice(&RIGHT_ENCODE_0);
+    x_append0.push(0x04);
+    shake.absorb(&x_append0);
+    let mut value: Vec<u8> = vec![0u8; l/8];
+    shake.squeeze(&mut value);
+    value
 }
 
 fn encode_string(s:&[u8]) ->Vec<u8>{
