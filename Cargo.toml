@@ -1,0 +1,6 @@
+[package]
+name = "KMAC_and_ECC"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
